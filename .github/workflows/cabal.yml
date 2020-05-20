@@ -49,3 +49,6 @@ jobs:
 
     - name: plant
       run: cabal v2-test plant --test-show-details=direct --test-option="--color=always"
+
+    - name: market
+      run: cabal v2-test market --test-show-details=direct --test-option="--color=always"

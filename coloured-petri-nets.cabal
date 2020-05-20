@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 10fc920932385314ed75a1b79dd63c165bed32febe2bc00ed84f92c98b90f794
+-- hash: 0a87061b9ee0945e1fe296bdcd01b9b65d51f103c16981de37f98792bb643bd9
 
 name:                coloured-petri-nets
 version:             0.1.0.0
@@ -52,6 +52,22 @@ test-suite gdiff
     base,
     coloured-petri-nets,
     containers
+  default-language: Haskell2010
+
+test-suite market
+  type: exitcode-stdio-1.0
+  main-is: Market.hs
+  other-modules:
+    Paths_coloured_petri_nets
+  hs-source-dirs:
+    models/market
+  other-extensions: BangPatterns
+  build-depends:
+    base,
+    coloured-petri-nets,
+    containers,
+    normaldistribution,
+    random
   default-language: Haskell2010
 
 test-suite plant

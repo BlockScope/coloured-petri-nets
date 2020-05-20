@@ -46,6 +46,14 @@
         , source-dirs =
             "models"
         }
+    , market =
+        { dependencies =
+            [ "base", "coloured-petri-nets", "random", "normaldistribution" ]
+        , main =
+            "Market.hs"
+        , source-dirs =
+            "models/market"
+        }
     , plant =
         { dependencies =
             [ "base", "coloured-petri-nets" ]
