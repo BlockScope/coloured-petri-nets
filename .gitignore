@@ -24,3 +24,4 @@ cabal.project.local~
 **/docs
 out/out.txt
 models/SeedsModel/out/outS/outS50.txt
+out/outDW/outD1.txt

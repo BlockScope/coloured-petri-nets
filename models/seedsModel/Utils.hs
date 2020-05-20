@@ -72,7 +72,7 @@ mkSt psis =
   where
     n = 1000
     pss = take n psis
-     
+
 mkSt' :: [Agent]
 mkSt' = ( replicate 3 (Seed{attr = Attrs {ind=0, psi=(-0.5)}, dg=0.0, art=0.0}) ++
           replicate 18 (Seed{attr = Attrs {ind=0, psi=(-0.388)}, dg=0.0, art=0.0}) ++
@@ -114,7 +114,7 @@ transAgent Plant{attr=a, dg=d, wct=w}
   | otherwise = Plant{attr=a, dg=d, wct=w}
 transAgent FPlant{attr=a,dg=d}
   | d > 8448.0 = Seed{attr=a, dg=0.0, art=0.0}
-  | otherwise = FPlant{attr=a,dg=d}                   
+  | otherwise = FPlant{attr=a,dg=d}
 
 out :: [DState] -> IO ()
 out dss = mapM_ print summs
@@ -161,9 +161,3 @@ go psis 0 = return ()
 go psis n = do
   psis' <- doSimulation psis n
   go psis' (n-1)
-
-main :: IO ()
-main = do
-  gen <- R.getStdGen
-  let psis = normals' (0.0, 6.0) gen
-  go psis 1

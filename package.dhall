@@ -93,5 +93,20 @@
         , source-dirs =
             "models"
         }
+    , utils =
+        { dependencies =
+            [ "base"
+            , "coloured-petri-nets"
+            , "text"
+            , "random"
+            , "normaldistribution"
+            ]
+        , other-modules =
+            [ "SeedsModel.Env", "SeedsModel.Utils" ]
+        , main =
+            "utils.hs"
+        , source-dirs =
+            "models"
+        }
     }
 }
