@@ -21,3 +21,7 @@ model =
     { rules = [r1, r2]
     , initState = s
     }
+
+main =
+    let nsteps = 100
+    in run model nsteps []

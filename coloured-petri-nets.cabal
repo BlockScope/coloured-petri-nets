@@ -1,3 +1,11 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.dhall by hpack version 0.31.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 10fc920932385314ed75a1b79dd63c165bed32febe2bc00ed84f92c98b90f794
+
 name:                coloured-petri-nets
 version:             0.1.0.0
 synopsis:            none
@@ -5,29 +13,71 @@ homepage:            none
 author:              none
 maintainer:          none
 build-type:          Simple
-cabal-version:       >=1.8
 
 library
-  build-depends:      base,
-                      random >=1.1 && <1.2,
-                      parsec >=3.1 && <3.2,
-                      template-haskell >=2.10 && <2.12,
-                      haskell-src-meta >= 0.6,
-                      containers >=0.5,
-                      multiset >= 0.3
-  ghc-options:	      -O2
-		 
-  hs-source-dirs:     src
+  build-depends:
+    base,
+    containers,
+    haskell-src-meta,
+    multiset,
+    parsec,
+    random,
+    template-haskell
+  hs-source-dirs:
+    src
+  exposed-modules:
+    Chromar.Core
+    Chromar.RuleQuotes
+    Chromar.Fluent
+    Chromar.Observables
+    Chromar.Multiset
+    Chromar.MAttrs
+    Chromar.MRuleParser
+    Chromar
+  other-modules:
+    Chromar.RuleParser
+    Paths_coloured_petri_nets
+  other-extensions: BangPatterns
+  default-language: Haskell2010
 
-  exposed-modules:    Chromar.Core
-                      Chromar.RuleQuotes
-                      Chromar.Fluent
-                      Chromar.Observables
-                      Chromar.Multiset
-                      Chromar.MAttrs
-                      Chromar.MRuleParser
-                      Chromar
-   
-  other-extensions:   BangPatterns
+test-suite gdiff
+  type: exitcode-stdio-1.0
+  main-is: gdiff.hs
+  other-modules:
+    Paths_coloured_petri_nets
+  hs-source-dirs:
+    models
+  other-extensions: BangPatterns
+  build-depends:
+    base,
+    coloured-petri-nets,
+    containers
+  default-language: Haskell2010
 
-  default-language:   Haskell2010
+test-suite plant
+  type: exitcode-stdio-1.0
+  main-is: plant.hs
+  other-modules:
+    Paths_coloured_petri_nets
+  hs-source-dirs:
+    models
+  other-extensions: BangPatterns
+  build-depends:
+    base,
+    coloured-petri-nets,
+    containers
+  default-language: Haskell2010
+
+test-suite simple
+  type: exitcode-stdio-1.0
+  main-is: simple.hs
+  other-modules:
+    Paths_coloured_petri_nets
+  hs-source-dirs:
+    models
+  other-extensions: BangPatterns
+  build-depends:
+    base,
+    coloured-petri-nets,
+    containers
+  default-language: Haskell2010

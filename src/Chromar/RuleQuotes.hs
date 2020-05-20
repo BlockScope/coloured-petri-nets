@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 module Chromar.RuleQuotes where
 
 import Language.Haskell.TH
@@ -6,6 +8,7 @@ import Language.Haskell.TH.Syntax
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Text.ParserCombinators.Parsec
+import Data.Maybe
 import Data.List
 import Chromar.MRuleParser
 import Chromar.MAttrs
@@ -86,14 +89,14 @@ mkLhs :: [Exp] -> Q [Stmt]
 mkLhs = mkLhsStmts Set.empty []
 
 isFluent :: Info -> Bool
-isFluent (VarI m t _ _) =
+isFluent (VarI m t _) =
     case t of
         (AppT (ConT tnm) _) -> "Fluent" `isSuffixOf` show tnm
         _ -> False
 isFluent _ = False
 
 isObservable :: Info -> Bool
-isObservable (VarI _ t _ _) =
+isObservable (VarI _ t _) =
     case t of
         (AppT (ConT tnm) _) -> "Observable" `isSuffixOf` show tnm
         _ -> False
@@ -150,8 +153,13 @@ tExp (AppE e1 e2) = do
     te2 <- tExp e2
     return $ AppE te1 te2
 tExp (TupE exps) = do
+#if __GLASGOW_HASKELL__ < 810
     texps <- mapM tExp exps
     return $ TupE texps
+#else
+    texps <- mapM tExp $ catMaybes exps
+    return . TupE $ Just <$> texps
+#endif
 tExp (ListE exps) = do
     texps <- mapM tExp exps
     return $ ListE texps
@@ -199,10 +207,18 @@ tDec (ValD p bd xs) = do
 tDec _ = error "expected ValD constr"
 
 tuplify :: Name -> Exp -> Exp -> Exp
+#if __GLASGOW_HASKELL__ < 810
 tuplify s lhs r = TupE [lhs, VarE s, r]
+#else
+tuplify s lhs r = TupE [Just lhs, Just $ VarE s, Just r]
+#endif
 
 tuplify2 :: Exp -> Exp -> Exp
+#if __GLASGOW_HASKELL__ < 810
 tuplify2 m ar = TupE [m, ar]
+#else
+tuplify2 m ar = TupE [Just m, Just ar]
+#endif
 
 mkActExp :: Name -> Exp -> Exp -> Exp
 mkActExp s lhs r = AppE (VarE $ mkName "fullRate") args

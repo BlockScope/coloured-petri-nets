@@ -27,6 +27,7 @@ import Control.Applicative hiding (empty)
 import Data.Fixed
 import qualified Data.Map.Strict as Map
 import Data.Maybe
+import Data.Semigroup
 
 type Time = Double
 
@@ -44,14 +45,17 @@ instance Applicative Fluent where
         { at = \t -> ($) (at ff t) (at fa t)
         }
 
+instance Semigroup a => Semigroup (Fluent a) where
+    (<>) f f' =
+        Fluent
+        { at = \t -> at f t <> at f' t
+        }
+
 --- maybe Monoid instance if 'a' is Monoid? Don't know if that's useful but maybe
 instance Monoid a =>
          Monoid (Fluent a) where
     mempty = constant mempty
-    mappend f f' =
-        Fluent
-        { at = \t -> at f t `mappend` at f' t
-        }
+    mappend = (<>)
 
 -- Maybe give some of these for convenience otherwise make Fluents
 -- instances of Num, Ord etc.

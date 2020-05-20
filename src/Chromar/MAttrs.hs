@@ -32,7 +32,7 @@ getType (RecC nm ifce) = AgentT (nameBase nm) (S.fromList fNames)
 getType _ = error "Expected records"
 
 extractIntf :: Info -> [AgentType]
-extractIntf (TyConI (DataD _ _ _ cons _)) = map getType cons
+extractIntf (TyConI (DataD _ _ _ _ cons _)) = map getType cons
 extractIntf _ = error "Expected type constructor"
 
 createMFExp :: Nm -> Q FieldExp
