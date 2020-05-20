@@ -1,10 +1,10 @@
-module Main where
+module SeedsModel.Utils where
 
 import Control.Monad
 import qualified System.Random as R
 import Data.Random.Normal
 import Chromar.Fluent
-import Env
+import SeedsModel.Env
 
 data Attrs = Attrs
   { ind :: Int

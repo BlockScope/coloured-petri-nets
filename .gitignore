@@ -23,3 +23,4 @@ cabal.project.local~
 .ghc.environment.*
 **/docs
 out/out.txt
+models/SeedsModel/out/outS/outS50.txt

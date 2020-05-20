@@ -1,4 +1,4 @@
-module Env where
+module SeedsModel.Env where
 
 import Chromar.Fluent
 import System.IO.Unsafe
@@ -7,6 +7,20 @@ import qualified Data.Text.IO as TI
 import qualified Data.Map.Strict as Map
 
 
+-- TODO: Need to generate this data.
+-- SEE: doi:10.1093/jxb/ery394
+-- SEE: A multi-model framework for the Arabidopsis life cycle
+-- For the growth simulations we used weather data from the ECMWF ERA-Interim
+-- dataset over the years 2010–2011 (Dee et al., 2011). A program provided by
+-- Mathew Williams and Luke Smallman (School of GeoSciences, University of
+-- Edinburgh) that uses methods from Williams et al. (2001) was used to
+-- generate hourly inputs given daily averages from the dataset for temperature
+-- and radiation. For the soil moisture input used in the photosynthesis rate
+-- calculation, we used a daily average of soil moisture values from the
+-- dataset and assumed that to be constant throughout the day (swvl parameters
+-- in the ERA dataset). The soil moisture parameter here is a number in
+-- arbitrary units from 0 to 1 that represents the ‘wetness’ of the soil while
+-- the soil moisture used above measures water potential and is given in MPa.
 dataFile = "data/weatherValencia10yrs.csv"
 
 temp' = unsafePerformIO (readTable dataFile 4)
@@ -112,13 +126,13 @@ htuOpt ar psi moist temp = (moist - mpsB) * (to - tbg)
   where
     mpsB = psB ar psi + kt * (temp - to)
 
----t : time
+--- t : time
 --- a : afterripening
 --- psi : initial dorm
 htu t a psi
   | moistt > psb && tempt > tbg && tempt < to = htuSub ar psi moistt tempt
   | mpsB < moistt && tempt > to = htuOpt a psi moistt tempt
-  | otherwise = 0.0                                
+  | otherwise = 0.0
   where
     tempt = at temp t
     moistt = at moist t
@@ -129,8 +143,6 @@ htu t a psi
 
 disp = when (ntemp <>*> constant 0.0) ntemp `orElse` (constant 0.0) where
   ntemp = temp <-*> constant tbd
-  
-------
 
 parseLine :: Int -> T.Text -> (Double, Double)
 parseLine n ln = (read $ T.unpack time, read $ T.unpack temp) where
@@ -144,5 +156,3 @@ readTable fn n = do
   contents <- TI.readFile fn
   let vals = map (parseLine n) (T.lines contents)
   return $ flookupM (Map.fromList vals)
-
-------

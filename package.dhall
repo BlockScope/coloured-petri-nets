@@ -41,6 +41,8 @@
     { gdiff =
         { dependencies =
             [ "base", "coloured-petri-nets" ]
+        , other-modules =
+            [] : List Text
         , main =
             "gdiff.hs"
         , source-dirs =
@@ -49,6 +51,8 @@
     , market =
         { dependencies =
             [ "base", "coloured-petri-nets", "random", "normaldistribution" ]
+        , other-modules =
+            [] : List Text
         , main =
             "Market.hs"
         , source-dirs =
@@ -57,6 +61,8 @@
     , plant =
         { dependencies =
             [ "base", "coloured-petri-nets" ]
+        , other-modules =
+            [] : List Text
         , main =
             "plant.hs"
         , source-dirs =
@@ -65,8 +71,25 @@
     , simple =
         { dependencies =
             [ "base", "coloured-petri-nets" ]
+        , other-modules =
+            [] : List Text
         , main =
             "simple.hs"
+        , source-dirs =
+            "models"
+        }
+    , germ =
+        { dependencies =
+            [ "base"
+            , "coloured-petri-nets"
+            , "text"
+            , "random"
+            , "normaldistribution"
+            ]
+        , other-modules =
+            [ "SeedsModel.Env", "SeedsModel.Germ" ]
+        , main =
+            "germ.hs"
         , source-dirs =
             "models"
         }

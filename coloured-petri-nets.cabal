@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0a87061b9ee0945e1fe296bdcd01b9b65d51f103c16981de37f98792bb643bd9
+-- hash: 35eba11fc55e2f88520259d9583c25782c23855f2fd4d82391b9ff291f32a843
 
 name:                coloured-petri-nets
 version:             0.1.0.0
@@ -43,8 +43,6 @@ library
 test-suite gdiff
   type: exitcode-stdio-1.0
   main-is: gdiff.hs
-  other-modules:
-    Paths_coloured_petri_nets
   hs-source-dirs:
     models
   other-extensions: BangPatterns
@@ -54,11 +52,27 @@ test-suite gdiff
     containers
   default-language: Haskell2010
 
+test-suite germ
+  type: exitcode-stdio-1.0
+  main-is: germ.hs
+  other-modules:
+    SeedsModel.Env
+    SeedsModel.Germ
+  hs-source-dirs:
+    models
+  other-extensions: BangPatterns
+  build-depends:
+    base,
+    coloured-petri-nets,
+    containers,
+    normaldistribution,
+    random,
+    text
+  default-language: Haskell2010
+
 test-suite market
   type: exitcode-stdio-1.0
   main-is: Market.hs
-  other-modules:
-    Paths_coloured_petri_nets
   hs-source-dirs:
     models/market
   other-extensions: BangPatterns
@@ -73,8 +87,6 @@ test-suite market
 test-suite plant
   type: exitcode-stdio-1.0
   main-is: plant.hs
-  other-modules:
-    Paths_coloured_petri_nets
   hs-source-dirs:
     models
   other-extensions: BangPatterns
@@ -87,8 +99,6 @@ test-suite plant
 test-suite simple
   type: exitcode-stdio-1.0
   main-is: simple.hs
-  other-modules:
-    Paths_coloured_petri_nets
   hs-source-dirs:
     models
   other-extensions: BangPatterns
