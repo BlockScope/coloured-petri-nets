@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -fno-warn-name-shadowing #-}
+{-# OPTIONS_GHC -fno-warn-unused-matches #-}
 module SeedsModel.Env where
 
 import Chromar.Fluent
@@ -21,18 +23,21 @@ import qualified Data.Map.Strict as Map
 -- in the ERA dataset). The soil moisture parameter here is a number in
 -- arbitrary units from 0 to 1 that represents the ‘wetness’ of the soil while
 -- the soil moisture used above measures water potential and is given in MPa.
+dataFile :: String
 dataFile = "data/weatherValencia10yrs.csv"
 
+temp', photo', day', moist :: Fluent Double
 temp' = unsafePerformIO (readTable dataFile 4)
 photo' = unsafePerformIO (readTable dataFile 2)
 day' = unsafePerformIO (readTable dataFile 3)
 moist = unsafePerformIO (readTable dataFile 5)
 
-
+fi, fu :: Double
 fi = 0.598
 --fi = 0.737
 fu = 0
 
+psmax, psmin, psu, psl, psSc, tbar, tbg, tbd, kt, to :: Double
 psmax = -5
 psmin = -1
 psu = -50
@@ -44,22 +49,16 @@ tbd = 3.0
 kt = 0.12
 to = 22
 
+day :: Fluent Bool
+day = day' <>*> constant 0.0
 
-tempBase = constant 3.0
-day  = day' <>*> constant 0.0
-
-
-idev = (*)
-       <$> constant 0.374
-       <*> (photo' <-*> constant 10.0)
-
-idev' = (/)
-       <$> idev
-       <*> constant 4.0
-
+idev, idev', idev'' :: Fluent Double
+idev = (*) <$> constant 0.374 <*> (photo' <-*> constant 10.0)
+idev' = (/) <$> idev <*> constant 4.0
 idev'' = constant 0.626 <+*> idev'
 
-
+tempBase, temp, thermal, pperiod, ptu :: Fluent Double
+tempBase = constant 3.0
 temp = max <$> (temp' <-*> tempBase) <*> pure 0.0
 thermal = when day temp `orElse` constant 0.0
 
@@ -69,21 +68,22 @@ pperiod =
 
 ptu = (*) <$> thermal <*> pperiod
 
-
+tmin, tmax, wcsat :: Double
 tmin = -3.5
 tmax = 6.0
 wcsat = 960.0
 
+favTemp :: Double -> Bool
 favTemp temp = temp >= tmin && temp <= tmax
 
-
+wcAcc :: Double -> Double -> Double
 wcAcc wc t = wc + exp k * ((t-tmin)**o) * ((tmax-t)**ksi)
   where
     k   = -5.1748
     o   = 2.2256
     ksi = 0.99590
 
-
+wcUpd :: Double -> Double -> Double
 wcUpd t wc =
   if favTemp ctemp
     then wc'
@@ -92,7 +92,7 @@ wcUpd t wc =
     ctemp = at temp t
     wc' = min (wcAcc wc ctemp) wcsat
 
-
+fp :: Double -> Double
 fp wc =
   if wc < wcsat
     then fp1
@@ -102,7 +102,7 @@ fp wc =
     fp1 = 1 - fi + (fi - fu) * wcRat
     fp2 = 1 - fu
 
-
+arUpd, psB :: Double -> Double -> Double
 arUpd moist temp
   | moist <= psmax && moist >= psu = temp - tbar
   | moist < psu && moist > psl = ((psl - moist) / (psl - psu)) * (temp - tbar)
@@ -120,6 +120,7 @@ psB ar psi =
     psb' = psi - psSc * (ar / (arlab * dsat * 24) )
 
 
+htuSub, htuOpt :: Double -> Double -> Double -> Double -> Double
 htuSub ar psi moist temp = (moist - psB ar psi) * (temp - tbg)
 
 htuOpt ar psi moist temp = (moist - mpsB) * (to - tbg)
@@ -129,6 +130,7 @@ htuOpt ar psi moist temp = (moist - mpsB) * (to - tbg)
 --- t : time
 --- a : afterripening
 --- psi : initial dorm
+htu :: Double -> Double -> Double -> Double
 htu t a psi
   | moistt > psb && tempt > tbg && tempt < to = htuSub ar psi moistt tempt
   | mpsB < moistt && tempt > to = htuOpt a psi moistt tempt
@@ -141,6 +143,7 @@ htu t a psi
     mpsB = psB ar psi + kt * (tempt-to)
 
 
+disp :: Fluent Double
 disp = when (ntemp <>*> constant 0.0) ntemp `orElse` (constant 0.0) where
   ntemp = temp <-*> constant tbd
 

@@ -1,5 +1,6 @@
-{-# LANGUAGE  QuasiQuotes #-}
-{-# LANGUAGE  TemplateHaskell #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# OPTIONS_GHC -fno-warn-unused-matches #-}
 
 module Main where
 
@@ -16,10 +17,9 @@ data Agent
     }
   deriving (Eq, Show)
 
-
-isAgent (Agent {idx=i, wealth=w}) = True
+isAgent :: Agent -> Bool
+isAgent Agent{} = True
 isAgent _ = False
-
 
 mkPopulation :: R.StdGen -> Multiset Agent
 mkPopulation g = ms (market : agents)
@@ -30,7 +30,6 @@ mkPopulation g = ms (market : agents)
     market = Market { sgen = take 20000 $ R.randomRs (0.0, 1.0) g }
     agents = [Agent {idx=i, wealth=w} | (i, w) <- zip [1..n] ws]
 
-
 calcGini :: Multiset Agent -> Double
 calcGini s = sum [abs (w-w') | w <- ws, w' <- ws] / (2*n*sWealth)
   where
@@ -38,19 +37,19 @@ calcGini s = sum [abs (w-w') | w <- ws, w' <- ws] / (2*n*sWealth)
     sWealth = sum ws
     n = fromIntegral (length ws)
 
-
 maxWealth :: Multiset Agent -> Double
 maxWealth s = maximum ws
   where
     ws = map wealth (toList s)
 
-
+gini :: Observable Agent
 gini = Observable { name = "gini", gen  = calcGini . select isAgent }
 
+maxW :: Observable Agent
 maxW = Observable { name = "maxW", gen = maxWealth . select isAgent }
 
+totalW :: Observable Agent
 totalW = Observable { name = "totalW", gen = sumM wealth . select isAgent }
-
 
 rsplit :: [Double] -> Double -> ([Double], Double, Double)
 rsplit (share:ss) n = (ss, w, w')
@@ -59,14 +58,12 @@ rsplit (share:ss) n = (ss, w, w')
     w' = n - w
 rsplit [] _ = error "not enough random numbers!"
 
-
 wsplit :: [Double] -> Double -> ([Double], Double, Double)
 wsplit (share:ss) n =
   if share > 0.5
     then (ss, n, 0.0)
     else (ss, 0.0, n)
 wsplit [] _ = error "not enough random numbers!"
-
 
 tsplit :: [Double] -> Double -> ([Double], Double, Double)
 tsplit (share:ss) n = (ss, w + (tax / 2.0), w' + (tax / 2.0))
@@ -77,17 +74,18 @@ tsplit (share:ss) n = (ss, w + (tax / 2.0), w' + (tax / 2.0))
     w' = afterTax - w
 tsplit [] _ = error "not enough random numbers!"
 
-
+ngen :: (a, b, c) -> a
 ngen (g, _, _) = g
 
+w1 :: (a, b, c) -> b
 w1 (_, w, _) = w
 
+w2 :: (a, b, c) -> c
 w2 (_, _, w) = w
 
+$(return [])
 
-$(return []) ----------
-
-
+transaction :: [(Agent, Int)] -> p -> [Rxn Agent]
 transaction =
   [rule| Market{sgen=g}, Agent{idx=i, wealth=w}, Agent{idx=k, wealth=w'} -->
            Market{sgen=ngen (tsplit g (w+w')) }, Agent{idx=i, wealth=w1 (tsplit g (w+w'))},

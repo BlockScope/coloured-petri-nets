@@ -1,12 +1,14 @@
 {-# LANGUAGE TransformListComp #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# OPTIONS_GHC -fno-warn-name-shadowing #-}
+{-# OPTIONS_GHC -fno-warn-unused-matches #-}
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 
 module SeedsModel.Germ where
 
-import Data.List
+import Data.List (foldl')
 import qualified System.Random as R
-import GHC.Exts (groupWith, the)
 import Data.Random.Normal
 import Chromar
 import SeedsModel.Env
@@ -45,25 +47,25 @@ data Agent
     deriving (Eq, Show)
 
 getInd :: Agent -> Int
-getInd Seed { attr = a } = ind a
-getInd Plant { attr = a } = ind a
-getInd FPlant { attr = a } = ind a
+getInd Seed{attr = a} = ind a
+getInd Plant{attr = a} = ind a
+getInd FPlant{attr = a} = ind a
+getInd System{} = error "No ind for System"
 
-
-isSeed (Seed{ attr=at, dg=d, art=a }) = True
+isSeed, isPlant, isFPlant, isSystem :: Agent -> Bool
+isSeed Seed{} = True
 isSeed _ = False
 
-isPlant (Plant { attr=at, dg=d, wct=w}) = True
+isPlant Plant{} = True
 isPlant _ = False
 
-isFPlant (FPlant { attr=at, dg=d } ) = True
+isFPlant FPlant{}  = True
 isFPlant _ = False
 
-
-isSystem (System { germTimes = g }) = True
+isSystem System{} = True
 isSystem _ = False
 
-
+avg :: (Fractional a1, Real a2, Foldable t) => t a2 -> a1
 avg l  = let (t,n) = foldl' (\(b,c) a -> (a+b,c+1)) (0,0) l 
          in (realToFrac(t)/realToFrac(n))
 
@@ -79,11 +81,9 @@ logf' t = 1.0 / (1.0 + exp (-100.0 * (t - 2604.0)))
 logs' :: Double -> Double
 logs' t = 1.0 / (1.0 + exp (-100.0 * (t - 8448.0)))
 
-
+nseeds, nplants, nfplants, avgGermTime, avgFlrTime, avgSTime :: Observable Agent
 nseeds = Observable {name = "nseeds", gen = countM . select isSeed}
-
 nplants = Observable { name = "nplants", gen  = countM . select isPlant }
-
 nfplants = Observable { name = "nfplants", gen = countM . select isFPlant }
 
 avgGermTime =
@@ -104,7 +104,7 @@ avgSTime =
   , gen = sumM (avg . ssTimes) . select isSystem
   }
 
-
+dev1, dev2, dev3, dev4 :: Observable Agent
 dev1 = Observable { name = "dev1", gen = sumM dg . selectAttr getInd 1 }
 dev2 = Observable { name = "dev2", gen = sumM dg . selectAttr getInd 2 }
 dev3 = Observable { name = "dev3", gen = sumM dg . selectAttr getInd 3 }
@@ -146,6 +146,7 @@ mkSt'' psis =
 $(return [])
 
 
+dev, trans, devp, transp, devfp, transfp :: [(Agent, Int)] -> Time -> [Rxn Agent]
 dev =
   [rule| Seed{attr=atr, dg=d, art=a} -->
              Seed{attr=atr, dg = d + (htu time a (psi atr)), art=a + (arUpd moist temp)} @1.0 |]
@@ -166,6 +167,7 @@ devfp = [rule| FPlant{dg=d} --> FPlant{dg=d+disp} @1.0 |]
 transfp = [rule| FPlant{tob=tb,attr=a,dg=d}, System{ssTimes=st} -->
                    Seed{tob=time, attr=a, dg=0.0, art=0.0}, System{ssTimes=(time-tb):st} @logs' d |]
 
+fname :: Show a => a -> String
 fname i = "models/seedsModel/out/outS/outS" ++ (show i) ++ ".txt"
 
 doSimulation :: [Double] -> Int -> IO ([Double])
@@ -185,25 +187,26 @@ go psis n = do
    psis' <- doSimulation psis n
    go psis' (n-1)
 
+showRow :: (Show a1, Show a2) => (a1, a2) -> String
 showRow (t, val) = show t ++ " " ++ show val
 
+writeTraj :: (Show a1, Show a2) => FilePath -> [(a1, a2)] -> IO ()
 writeTraj fn traj = writeFile fn (unlines rows)
   where
     header = "time" ++ " " ++ "val"
     rows = header : (map showRow traj)
 
+calcDay :: Double -> Integer
 calcDay = floor . (/24)
 
+everyN :: Int -> [a] -> [a]
 everyN n xs =
   case drop (n - 1) xs of
     [] -> []
     (y:ys) -> y : everyN n ys
 
-runTW'
-  :: (Eq a, Show a)
-  => Model a -> Time -> FilePath -> Observable a -> IO ()
-runTW' (Model {rules = rs
-              ,initState = s}) tEnd fn obs = do
+runTW' :: Eq a => Model a -> Time -> FilePath -> Observable a -> IO ()
+runTW' Model{rules = rs, initState = s} tEnd fn obs = do
   rgen <- R.getStdGen
   let traj = everyN 100 (takeWhile (\s -> getT s < tEnd) $ simulate rgen rs s)
   let ttraj = [ (t, gen obs $ m) | State m t n <- traj]

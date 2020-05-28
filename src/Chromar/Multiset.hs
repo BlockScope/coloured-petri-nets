@@ -1,4 +1,11 @@
-module Chromar.Multiset where
+module Chromar.Multiset
+    ( Multiset
+    , mults
+    , plus
+    , diff
+    , toList
+    , ms
+    ) where
 
 import Data.List (find)
 

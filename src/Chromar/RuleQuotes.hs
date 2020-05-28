@@ -3,16 +3,22 @@
 module Chromar.RuleQuotes where
 
 import Prelude hiding (exp)
-import Language.Haskell.TH
-import Language.Haskell.TH.Quote
-import Language.Haskell.TH.Syntax
-import Data.Set (Set)
-import qualified Data.Set as Set
-import Text.ParserCombinators.Parsec
 import Data.Maybe (catMaybes)
 import Data.List (isSuffixOf)
-import Chromar.MRuleParser
-import Chromar.MAttrs
+import Data.Set (Set)
+import qualified Data.Set as Set
+import Language.Haskell.TH
+    ( Q, Name, Stmt(..), Dec(..)
+    , Type(..), Info(..), Body(..)
+    , Pat(..), FieldPat
+    , Exp(..), FieldExp
+    , newName, mkName, reify, lookupValueName
+    )
+import Language.Haskell.TH.Quote (QuasiQuoter(..))
+import Language.Haskell.TH.Syntax (showName)
+import Text.ParserCombinators.Parsec (parse)
+import Chromar.MRuleParser (SRule(..), parseRule)
+import Chromar.MAttrs (fillAttrs)
 
 type FieldProd = (FieldPat, [Exp], Set Name)
 

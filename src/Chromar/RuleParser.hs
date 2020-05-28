@@ -1,10 +1,11 @@
 module Chromar.RuleParser where
 
 import Prelude hiding (exp)
-import Text.ParserCombinators.Parsec.Combinator
+import Text.ParserCombinators.Parsec.Combinator (option, many1, sepBy)
 import Text.ParserCombinators.Parsec
-import Language.Haskell.TH
-import Language.Haskell.Meta.Parse
+    (Parser, parse, spaces, skipMany, newline, char, string, noneOf)
+import Language.Haskell.TH (Exp, Pat)
+import Language.Haskell.Meta.Parse (parseExp, parsePat)
 
 data SRule = SRule
     { lexps :: [Exp]

@@ -1,6 +1,5 @@
 module Chromar.Fluent
-    ( Time
-    , Fluent
+    ( Fluent
     , at
     , mkFluent
     , (<>*>)
@@ -25,11 +24,10 @@ module Chromar.Fluent
 
 import Prelude hiding (init)
 import Control.Applicative hiding (empty)
-import Data.Fixed
-import qualified Data.Map.Strict as Map
-import Data.Maybe
-
-type Time = Double
+import Data.Fixed (mod')
+import qualified Data.Map.Strict as Map (Map, lookupLE)
+import Data.Maybe (fromMaybe)
+import Chromar.Core (Time)
 
 data Fluent a = Fluent { at :: Time -> a }
 

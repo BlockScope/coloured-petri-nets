@@ -1,9 +1,12 @@
 module Chromar.MAttrs where
 
 import Language.Haskell.TH
-import qualified Data.Set as S
-import qualified Data.Map as M
-import Chromar.MRuleParser
+    ( Q, Info(..), Exp(..), FieldExp, Con(..), Dec(..)
+    , newName, mkName, nameBase, reify
+    )
+import qualified Data.Set as S (Set, fromList, toList, difference)
+import qualified Data.Map as M (fromList, toList, difference, union)
+import Chromar.MRuleParser (SRule(..))
 
 type Nm = String
 

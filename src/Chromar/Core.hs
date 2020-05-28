@@ -3,8 +3,8 @@
 module Chromar.Core where
 
 import Prelude hiding (init)
-import qualified System.Random as R
-import Chromar.Multiset
+import qualified System.Random as R (StdGen, randomR)
+import Chromar.Multiset (Multiset, diff, plus, mults)
 
 data Rxn a = Rxn
     { lhs :: Multiset a

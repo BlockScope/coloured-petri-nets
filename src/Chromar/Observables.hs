@@ -1,9 +1,9 @@
 module Chromar.Observables where
 
-import Numeric
-import qualified System.Random as R
-import Chromar.Multiset
-import Chromar.Core
+import Numeric (showFFloat)
+import qualified System.Random as R (getStdGen)
+import Chromar.Multiset (Multiset, toList)
+import Chromar.Core (Model(..), Time, State(..), simulate, getT)
 
 type Obs = Double
 
