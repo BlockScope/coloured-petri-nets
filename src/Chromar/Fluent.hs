@@ -33,50 +33,33 @@ type Time = Double
 
 data Fluent a = Fluent { at :: Time -> a }
 
-
 instance Functor Fluent where
-  fmap f fa = Fluent { at = f . at fa } 
-
+  fmap f fa = Fluent { at = f . at fa }
 
 instance Applicative Fluent where
     pure = constant
-    (<*>) ff fa =
-        Fluent
-        { at = \t -> ($) (at ff t) (at fa t)
-        }
+    (<*>) ff fa = Fluent { at = \t -> ($) (at ff t) (at fa t) }
 
 instance Semigroup a => Semigroup (Fluent a) where
-    (<>) f f' =
-        Fluent
-        { at = \t -> at f t <> at f' t
-        }
+    (<>) f f' = Fluent { at = \t -> at f t <> at f' t }
 
 --- maybe Monoid instance if 'a' is Monoid? Don't know if that's useful but maybe
-instance Monoid a =>
-         Monoid (Fluent a) where
+instance Monoid a => Monoid (Fluent a) where
     mempty = constant mempty
     mappend = (<>)
 
 -- Maybe give some of these for convenience otherwise make Fluents
 -- instances of Num, Ord etc.
-(<>*>)
-    :: (Ord a)
-    => Fluent a -> Fluent a -> Fluent Bool
+(<>*>) :: (Ord a) => Fluent a -> Fluent a -> Fluent Bool
 (<>*>) = liftA2 (>)
 
-(<<*>)
-    :: (Ord a)
-    => Fluent a -> Fluent a -> Fluent Bool
+(<<*>) :: (Ord a) => Fluent a -> Fluent a -> Fluent Bool
 (<<*>) = liftA2 (<)
 
-(<+*>)
-    :: (Num a)
-    => Fluent a -> Fluent a -> Fluent a
+(<+*>) :: (Num a) => Fluent a -> Fluent a -> Fluent a
 (<+*>) = liftA2 (+)
 
-(<-*>)
-    :: (Num a)
-    => Fluent a -> Fluent a -> Fluent a
+(<-*>) :: (Num a) => Fluent a -> Fluent a -> Fluent a
 (<-*>) = liftA2 (-)
 
 mkFluent :: (Time -> a) -> Fluent a
@@ -97,9 +80,9 @@ funtilT t' fa fb = Fluent { at = \t -> if t <= t' then at fa t
 
 orElse :: Fluent (Maybe a) -> Fluent a -> Fluent a
 fa `orElse` fb = Fluent { at = \t -> case (at fa t) of
-                             Just x  -> x 
+                             Just x  -> x
                              Nothing -> at fb t }
-                                                        
+
 when :: Fluent Bool -> Fluent a -> Fluent (Maybe a)
 when fb fa = Fluent { at = \t-> if at fb t then Just (at fa t)
                                 else Nothing }
@@ -109,20 +92,15 @@ after t' = time <>*> (constant t')
 
 between :: Time -> Time -> Fluent a -> Fluent a -> Fluent a
 between t1 t2 f1 f2 = funtilT t2 (funtilT t1 f2 f1) f2
-                 
-fconcat
-    :: (Monoid a)
-    => [Time] -> [Fluent a] -> Fluent a
+
+fconcat :: (Monoid a) => [Time] -> [Fluent a] -> Fluent a
 fconcat ts fs =
     let emptyF = constant mempty
         emptyUntil = funtilT 0
         untils = map funtilT ts
     in fconcat' (emptyUntil : untils) fs emptyF
 
-fconcat' :: [Fluent a -> Fluent a -> Fluent a]
-         -> [Fluent a]
-         -> Fluent a
-         -> Fluent a
+fconcat' :: [Fluent a -> Fluent a -> Fluent a] -> [Fluent a] -> Fluent a -> Fluent a
 fconcat' [] [] acc = acc
 fconcat' [] _ acc = acc
 fconcat' _ [] acc = acc
@@ -141,13 +119,8 @@ ffind ((t1, val1):(t2, val2):tvals) t =
 flookup :: [(Time, a)] -> Fluent a
 flookup tvals = Fluent { at = ffind tvals }
 
-flookupM
-    :: (Fractional a)
-    => Map.Map Time a -> Fluent a
-flookupM tvals =
-    Fluent
-    { at = \t -> fromMaybe 0.0 $ fmap snd (Map.lookupLE t tvals)
-    }
+flookupM :: (Fractional a) => Map.Map Time a -> Fluent a
+flookupM tvals = Fluent { at = \t -> fromMaybe 0.0 $ fmap snd (Map.lookupLE t tvals) }
 
 every :: Time -> a -> (a -> a) -> Fluent a
 every t init acc =
@@ -163,12 +136,12 @@ acc f ti init acc =
     let times = scanl1 (+) (repeat ti)
         vals = map (at f) times
     in accTable (zip times vals) init acc
-                      
+
 accTable :: [(Time, a)] -> b -> (a -> b -> b) -> Fluent b
 accTable table init accF =
     Fluent
-    { at =
-        \t -> foldr (\(tt, v) acc -> accF v acc) init (tableUntilTime t table)
-    }
-  where
-    tableUntilTime t = takeWhile (\(tt, v) -> tt <= t)
+        { at =
+            \t -> foldr (\(tt, v) acc -> accF v acc) init (tableUntilTime t table)
+        }
+    where
+      tableUntilTime t = takeWhile (\(tt, v) -> tt <= t)

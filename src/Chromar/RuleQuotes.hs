@@ -221,34 +221,36 @@ tuplify2 m ar = TupE [Just m, Just ar]
 #endif
 
 mkActExp :: Name -> Exp -> Exp -> Exp
-mkActExp s lhs r = AppE (VarE $ mkName "fullRate") args
-  where
-    args = tuplify s lhs r
+mkActExp s lhs r =
+    AppE (VarE $ mkName "fullRate") args
+    where
+        args = tuplify s lhs r
 
 mkReturnStmt :: Exp -> Stmt
 mkReturnStmt = NoBindS
 
 mkRxnExp :: Name -> SRule -> Exp
-mkRxnExp s r = RecConE (mkName "Rxn") fields
-  where
-    lhsSym = mkName "lhs"
-    rhsSym = mkName "rhs"
-    rateSym = mkName "rate"
-    actSym = mkName "act"
-    mrexps =
-        AppE
-            (VarE $ mkName "nrepl")
-            (tuplify2 (ListE $ mults r) (ListE $ rexps r))
-    lexps' = AppE (VarE $ mkName "ms") (ListE $ lexps r)
-    rexps' = AppE (VarE $ mkName "ms") (ParensE mrexps)
-    rateExp = srate r
-    actExp = mkActExp s lexps' (srate r)
-    fields =
-        [ (lhsSym, lexps')
-        , (rhsSym, rexps')
-        , (rateSym, rateExp)
-        , (actSym, actExp)
-        ]
+mkRxnExp s r =
+    RecConE (mkName "Rxn") fields
+    where
+        lhsSym = mkName "lhs"
+        rhsSym = mkName "rhs"
+        rateSym = mkName "rate"
+        actSym = mkName "act"
+        mrexps =
+            AppE
+                (VarE $ mkName "nrepl")
+                (tuplify2 (ListE $ mults r) (ListE $ rexps r))
+        lexps' = AppE (VarE $ mkName "ms") (ListE $ lexps r)
+        rexps' = AppE (VarE $ mkName "ms") (ParensE mrexps)
+        rateExp = srate r
+        actExp = mkActExp s lexps' (srate r)
+        fields =
+            [ (lhsSym, lexps')
+            , (rhsSym, rexps')
+            , (rateSym, rateExp)
+            , (actSym, actExp)
+            ]
 
 mkCompStmts :: Name -> SRule -> Q [Stmt]
 mkCompStmts s r = do
@@ -267,25 +269,28 @@ ruleQuoter' r = do
     return $ LamE [VarP state, VarP time] (CompE stmts)
 
 fluentTransform :: SRule -> Q SRule
-fluentTransform SRule {lexps = les
-                      ,rexps = res
-                      ,mults = m         
-                      ,srate = r
-                      ,cond = c
-                      ,decs = ds} = do
+fluentTransform
+    SRule
+        { lexps = les
+        , rexps = res
+        , mults = m
+        , srate = r
+        , cond = c
+        , decs = ds
+        } = do
     re <- tExp r
     ce <- tExp c
     tres <- mapM tExp res
     tds <- mapM tDec ds
     return
         SRule
-        { lexps = les
-        , rexps = tres
-        , mults = m          
-        , srate = re
-        , cond = ce
-        , decs = tds         
-        }
+            { lexps = les
+            , rexps = tres
+            , mults = m
+            , srate = re
+            , cond = ce
+            , decs = tds
+            }
 
 ruleQuoter :: String -> Q Exp
 ruleQuoter s =

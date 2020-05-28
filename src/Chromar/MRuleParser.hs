@@ -16,7 +16,7 @@ data SRule = SRule
     , mults :: [Exp]
     , srate :: Exp
     , cond :: Exp
-    , decs :: [Dec]  
+    , decs :: [Dec]
     } deriving (Show)
 
 langDef =
@@ -77,10 +77,11 @@ dec = do
   return (vName, expr)
 
 valDec :: (String, String) -> Dec
-valDec (nm, sexpr) = ValD (VarP $ mkName nm) (NormalB expr) []
-  where
-    expr = createExp sexpr
-    
+valDec (nm, sexpr) =
+    ValD (VarP $ mkName nm) (NormalB expr) []
+    where
+        expr = createExp sexpr
+
 whereParser :: Parser [Dec]
 whereParser = do
   op "where"
