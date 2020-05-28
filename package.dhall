@@ -38,13 +38,18 @@
     , exposed-modules =
         "Chromar"
     , when =
-        { condition =
-            "impl(ghc >= 8.10.0)"
-        , `then` =
-            { source-dirs = [ "src-ghc-8.10" ] }
-        , `else` =
-            { source-dirs = [ "src-ghc-8.8" ] }
-        }
+        [ { condition = "impl(ghc >= 8.10.0)", source-dirs = "src-ghc-8.10" }
+        , { condition =
+              "impl(ghc >= 8.8.0) && impl(ghc < 8.10.0)"
+          , source-dirs =
+              "src-ghc-8.8"
+          }
+        , { condition =
+              "impl(ghc >= 8.6.0) && impl(ghc < 8.8.0)"
+          , source-dirs =
+              "src-ghc-8.6"
+          }
+        ]
     }
 , tests =
     { gdiff =

@@ -25,3 +25,5 @@ cabal.project.local~
 out/out.txt
 models/SeedsModel/out/outS/outS50.txt
 out/outDW/outD1.txt
+*.swn
+models/market/out/outGini.txt
