@@ -2,8 +2,8 @@
 {-# OPTIONS_GHC -fno-warn-unused-matches #-}
 module SeedsModel.Env where
 
-import Chromar.Fluent
-import System.IO.Unsafe
+import Chromar
+import System.IO.Unsafe (unsafePerformIO)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TI
 import qualified Data.Map.Strict as Map

@@ -36,15 +36,15 @@
         , "multiset"
         ]
     , exposed-modules =
-        [ "Chromar.Core"
-        , "Chromar.RuleQuotes"
-        , "Chromar.Fluent"
-        , "Chromar.Observables"
-        , "Chromar.Multiset"
-        , "Chromar.MAttrs"
-        , "Chromar.MRuleParser"
-        , "Chromar"
-        ]
+        "Chromar"
+    , when =
+        { condition =
+            "impl(ghc >= 8.10.0)"
+        , `then` =
+            { source-dirs = [ "src-ghc-8.10" ] }
+        , `else` =
+            { source-dirs = [ "src-ghc-8.8" ] }
+        }
     }
 , tests =
     { gdiff =
