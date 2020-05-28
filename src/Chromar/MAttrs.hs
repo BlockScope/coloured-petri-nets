@@ -70,12 +70,13 @@ sameType :: Exp -> Exp -> Bool
 sameType (RecConE nm _) (RecConE nm' _) = nm == nm'
 sameType _ _ = error "Expected records"
 
+tRExp :: Exp -> Exp -> Exp
 tRExp l r
     | sameType l r = fRExp l r
     | otherwise = r
 
 lZipWith :: (a -> b -> b) -> [a] -> [b] -> [b]
-lZipWith _ ls [] = []
+lZipWith _ _ls [] = []
 lZipWith _ [] rs = rs
 lZipWith f (l:ls) (r:rs) = f l r : lZipWith f ls rs
 

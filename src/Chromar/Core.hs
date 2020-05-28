@@ -2,8 +2,8 @@
 
 module Chromar.Core where
 
+import Prelude hiding (init)
 import qualified System.Random as R
-import Data.List (find)
 import Chromar.Multiset
 
 data Rxn a = Rxn
@@ -48,7 +48,7 @@ fullRate :: (Eq a) => (Multiset a, Multiset a, Double) -> Double
 fullRate (m1, m2, br) = fromIntegral (mults m1 m2) * br
 
 nrepl :: ([Int], [a]) -> [a]
-nrepl (mults, elems) = concat [replicate m e | (m, e) <- zip mults elems]
+nrepl (mults', elems) = concat [replicate m e | (m, e) <- zip mults' elems]
 
 apply :: (Eq a) => Rxn a -> Multiset a -> Multiset a
 apply rxn mix = mix `diff` (lhs rxn) `plus` (rhs rxn)
@@ -79,22 +79,22 @@ step' rxns (gen, State mix t n) =
         mix' = apply rxn mix
 
 simulate' :: (Eq a) => R.StdGen -> [Rule a] -> Multiset a -> [State a]
-simulate' gen rules init =
+simulate' gen rules' init =
     map snd $ iterate (step' rxns) (gen, State init 0.0 0)
     where
-        rxns = concatMap (\r -> r init 0.0) rules
+        rxns = concatMap (\r -> r init 0.0) rules'
 
 step :: (Eq a) => [Rule a] -> (R.StdGen, State a) -> (R.StdGen, State a)
-step rules (gen, State mix t n) =
+step rules' (gen, State mix t n) =
     (gen', State mix' (t + dt) (n + 1))
     where
-        rxns = concatMap (\r -> r mix t) rules
+        rxns = concatMap (\r -> r mix t) rules'
         actRxns = filter (\r -> act r > 0.0) rxns
         (rxn, dt, gen') = sample gen actRxns
         mix' = apply rxn mix
 
 simulate :: (Eq a) => R.StdGen -> [Rule a] -> Multiset a -> [State a]
-simulate gen rules init = map snd $ iterate (step rules) (gen, State init 0.0 0)
+simulate gen rules' init = map snd $ iterate (step rules') (gen, State init 0.0 0)
 
 printTrajectory :: (Show a) => [State a] -> IO ()
 printTrajectory states = mapM_ (putStrLn . showState) states

@@ -14,6 +14,15 @@
     "BangPatterns"
 , dependencies =
     [ "base", "containers" ]
+, ghc-options =
+    [ "-Wall"
+    , "-Werror"
+    , "-Wincomplete-uni-patterns"
+    , "-Wcompat"
+    , "-Widentities"
+    , "-Wredundant-constraints"
+    , "-fhide-source-paths"
+    ]
 , library =
     { source-dirs =
         "src"

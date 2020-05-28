@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a450fc8da92a363832d35056fb1303e5733d1984f2e988f8c592ac01b4f640b8
+-- hash: 29eaeeb7bfa2da455bb02fad458b459dc4906ff8e1b26e1f02b277e9fafd3f97
 
 name:                coloured-petri-nets
 version:             0.1.0.0
@@ -38,6 +38,7 @@ library
     Chromar.RuleParser
     Paths_coloured_petri_nets
   other-extensions: BangPatterns
+  ghc-options: -Wall -Werror -Wincomplete-uni-patterns -Wcompat -Widentities -Wredundant-constraints -fhide-source-paths
   default-language: Haskell2010
 
 test-suite gdiff
@@ -46,6 +47,7 @@ test-suite gdiff
   hs-source-dirs:
     models
   other-extensions: BangPatterns
+  ghc-options: -Wall -Werror -Wincomplete-uni-patterns -Wcompat -Widentities -Wredundant-constraints -fhide-source-paths
   build-depends:
     base,
     coloured-petri-nets,
@@ -61,6 +63,7 @@ test-suite germ
   hs-source-dirs:
     models
   other-extensions: BangPatterns
+  ghc-options: -Wall -Werror -Wincomplete-uni-patterns -Wcompat -Widentities -Wredundant-constraints -fhide-source-paths
   build-depends:
     base,
     coloured-petri-nets,
@@ -76,6 +79,7 @@ test-suite market
   hs-source-dirs:
     models/market
   other-extensions: BangPatterns
+  ghc-options: -Wall -Werror -Wincomplete-uni-patterns -Wcompat -Widentities -Wredundant-constraints -fhide-source-paths
   build-depends:
     base,
     coloured-petri-nets,
@@ -90,6 +94,7 @@ test-suite plant
   hs-source-dirs:
     models
   other-extensions: BangPatterns
+  ghc-options: -Wall -Werror -Wincomplete-uni-patterns -Wcompat -Widentities -Wredundant-constraints -fhide-source-paths
   build-depends:
     base,
     coloured-petri-nets,
@@ -102,6 +107,7 @@ test-suite simple
   hs-source-dirs:
     models
   other-extensions: BangPatterns
+  ghc-options: -Wall -Werror -Wincomplete-uni-patterns -Wcompat -Widentities -Wredundant-constraints -fhide-source-paths
   build-depends:
     base,
     coloured-petri-nets,
@@ -117,6 +123,7 @@ test-suite utils
   hs-source-dirs:
     models
   other-extensions: BangPatterns
+  ghc-options: -Wall -Werror -Wincomplete-uni-patterns -Wcompat -Widentities -Wredundant-constraints -fhide-source-paths
   build-depends:
     base,
     coloured-petri-nets,

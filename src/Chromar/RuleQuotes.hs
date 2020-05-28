@@ -2,14 +2,15 @@
 
 module Chromar.RuleQuotes where
 
+import Prelude hiding (exp)
 import Language.Haskell.TH
 import Language.Haskell.TH.Quote
 import Language.Haskell.TH.Syntax
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Text.ParserCombinators.Parsec
-import Data.Maybe
-import Data.List
+import Data.Maybe (catMaybes)
+import Data.List (isSuffixOf)
 import Chromar.MRuleParser
 import Chromar.MAttrs
 
@@ -32,14 +33,14 @@ tFieldPat names freshNm (nm, VarE pnm) =
              , [UInfixE (VarE freshNm) (VarE $ mkName "==") (VarE pnm)]
              , Set.empty)
         else ((nm, VarP pnm), [], Set.fromList [pnm])
-tFieldPat name freshNm (nm, exp) =
+tFieldPat _name freshNm (nm, exp) =
     ( (nm, VarP freshNm)
     , [UInfixE (VarE freshNm) (VarE $ mkName "==") exp]
     , Set.empty)
 
 --- monadic action
 qtFieldPat :: Set Name -> FieldExp -> Q FieldProd
-qtFieldPat names fexp@(nm, exp) = do
+qtFieldPat names fexp@(nm, _exp) = do
     fn <- newName (showName nm)
     return $ tFieldPat names fn fexp
 
@@ -80,7 +81,7 @@ tAgentPat sn (RecConE nm fexps) = mkAgentStmts nm qexps
 tAgentPat _ _ = error "expected records"
 
 mkLhsStmts :: Set Name -> [Stmt] -> [Exp] -> Q [Stmt]
-mkLhsStmts sn allStmts [] = return allStmts
+mkLhsStmts _sn allStmts [] = return allStmts
 mkLhsStmts sn allStmts (exp:exps) = do
     (stmts, sn') <- tAgentPat sn exp
     mkLhsStmts (Set.union sn sn') (allStmts ++ stmts) exps
@@ -89,7 +90,7 @@ mkLhs :: [Exp] -> Q [Stmt]
 mkLhs = mkLhsStmts Set.empty []
 
 isFluent :: Info -> Bool
-isFluent (VarI m t _) =
+isFluent (VarI _m t _) =
     case t of
         (AppT (ConT tnm) _) -> "Fluent" `isSuffixOf` show tnm
         _ -> False
@@ -119,6 +120,9 @@ tStmt (BindS p e) = do
 tStmt (NoBindS e) = do
     te <- tExp e
     return $ NoBindS te
+tStmt LetS{} = error "Unexpected let statement"
+tStmt ParS{} = error "Unexpected par statement"
+tStmt RecS{} = error "Unexpected rec statement"
 
 tMExp :: Maybe Exp -> Q (Maybe Exp)
 tMExp (Just e) = do
