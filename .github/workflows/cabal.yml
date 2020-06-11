@@ -14,7 +14,6 @@ jobs:
       matrix:
         cabal: ["3.0"]
         ghc:
-          - "8.4.4"
           - "8.6.5"
           - "8.8.3"
           - "8.10.1"
@@ -39,16 +38,12 @@ jobs:
     - name: build
       run: |
         cabal v2-update
-        cabal v2-build all --enable-tests
+        cabal v2-build all:libs
+        cabal v2-build simple --enable-tests
+        cabal v2-build plant --enable-tests
 
     - name: simple
       run: cabal v2-test simple --test-show-details=direct --test-option="--color=always"
 
-    - name: gdiff
-      run: cabal v2-test gdiff --test-show-details=direct --test-option="--color=always"
-
     - name: plant
       run: cabal v2-test plant --test-show-details=direct --test-option="--color=always"
-
-    - name: market
-      run: cabal v2-test market --test-show-details=direct --test-option="--color=always"
