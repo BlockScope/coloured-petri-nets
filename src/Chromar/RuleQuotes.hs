@@ -1,14 +1,20 @@
 module Chromar.RuleQuotes where
 
-import Language.Haskell.TH
-import Language.Haskell.TH.Quote
-import Language.Haskell.TH.Syntax
+import Prelude hiding (exp)
 import Data.Set (Set)
 import qualified Data.Set as Set
-import Text.ParserCombinators.Parsec
-import Data.List
-import Chromar.MRuleParser
-import Chromar.MAttrs
+import Language.Haskell.TH
+    ( Q, Name, Stmt(..), Dec(..), Body(..)
+    , Pat(..), FieldPat
+    , Exp(..), FieldExp
+    , newName, mkName
+    )
+import Language.Haskell.TH.Quote (QuasiQuoter(..))
+import Language.Haskell.TH.Syntax (showName)
+import Text.ParserCombinators.Parsec (parse)
+import Chromar.MRuleParser (SRule(..), parseRule)
+import Chromar.MAttrs (fillAttrs)
+import Internal.RuleQuotes
 
 type FieldProd = (FieldPat, [Exp], Set Name)
 
@@ -29,14 +35,14 @@ tFieldPat names freshNm (nm, VarE pnm) =
              , [UInfixE (VarE freshNm) (VarE $ mkName "==") (VarE pnm)]
              , Set.empty)
         else ((nm, VarP pnm), [], Set.fromList [pnm])
-tFieldPat name freshNm (nm, exp) =
+tFieldPat _name freshNm (nm, exp) =
     ( (nm, VarP freshNm)
     , [UInfixE (VarE freshNm) (VarE $ mkName "==") exp]
     , Set.empty)
 
 --- monadic action
 qtFieldPat :: Set Name -> FieldExp -> Q FieldProd
-qtFieldPat names fexp@(nm, exp) = do
+qtFieldPat names fexp@(nm, _exp) = do
     fn <- newName (showName nm)
     return $ tFieldPat names fn fexp
 
@@ -77,114 +83,13 @@ tAgentPat sn (RecConE nm fexps) = mkAgentStmts nm qexps
 tAgentPat _ _ = error "expected records"
 
 mkLhsStmts :: Set Name -> [Stmt] -> [Exp] -> Q [Stmt]
-mkLhsStmts sn allStmts [] = return allStmts
+mkLhsStmts _sn allStmts [] = return allStmts
 mkLhsStmts sn allStmts (exp:exps) = do
     (stmts, sn') <- tAgentPat sn exp
     mkLhsStmts (Set.union sn sn') (allStmts ++ stmts) exps
 
 mkLhs :: [Exp] -> Q [Stmt]
 mkLhs = mkLhsStmts Set.empty []
-
-isFluent :: Info -> Bool
-isFluent (VarI m t _ _) =
-    case t of
-        (AppT (ConT tnm) _) -> "Fluent" `isSuffixOf` show tnm
-        _ -> False
-isFluent _ = False
-
-isObservable :: Info -> Bool
-isObservable (VarI _ t _ _) =
-    case t of
-        (AppT (ConT tnm) _) -> "Observable" `isSuffixOf` show tnm
-        _ -> False
-isObservable _ = False
-
-mkFApp :: Name -> Exp
-mkFApp nm =
-    ParensE (AppE (AppE (VarE $ mkName "at") (VarE nm)) (VarE $ mkName "t"))
-
-mkObsApp :: Name -> Exp
-mkObsApp nm = ParensE (AppE obsFExp stateExp)
-  where
-    obsFExp = AppE (VarE $ mkName "gen") (VarE nm)
-    stateExp = VarE $ mkName "s"
-
-tStmt :: Stmt -> Q Stmt
-tStmt (BindS p e) = do
-    te <- tExp e
-    return $ BindS p te
-tStmt (NoBindS e) = do
-    te <- tExp e
-    return $ NoBindS te
-
-tMExp :: Maybe Exp -> Q (Maybe Exp)
-tMExp (Just e) = do
-    te <- tExp e
-    return (Just te)
-tMExp Nothing = return Nothing
-
-tName :: Maybe Name -> Exp -> Q Exp
-tName (Just nm) exp = do
-    info <- reify nm
-    if isFluent info
-        then return $ mkFApp nm
-        else return exp
-tName Nothing exp = return exp
-
-tNameObs :: Maybe Name -> Exp -> Q Exp
-tNameObs (Just nm) e = do
-    info <- reify nm
-    if isObservable info
-        then return $ mkObsApp nm
-        else return e
-tNameObs Nothing e = return e
-
---- there's probably a better way of doing this
-tExp :: Exp -> Q Exp
-tExp var@(VarE nm) = do
-    mnm <- lookupValueName (show nm)
-    e <- tName mnm var
-    tNameObs mnm e
-tExp (AppE e1 e2) = do
-    te1 <- tExp e1
-    te2 <- tExp e2
-    return $ AppE te1 te2
-tExp (TupE exps) = do
-    texps <- mapM tExp exps
-    return $ TupE texps
-tExp (ListE exps) = do
-    texps <- mapM tExp exps
-    return $ ListE texps
-tExp (UInfixE e1 e2 e3) = do
-    te1 <- tExp e1
-    te2 <- tExp e2
-    te3 <- tExp e3
-    return $ UInfixE te1 te2 te3
-tExp (ParensE e) = do
-    te <- tExp e
-    return $ ParensE te
-tExp (LamE pats e) = do
-    te <- tExp e
-    return $ LamE pats te
-tExp (CompE stmts) = do
-    tstmts <- mapM tStmt stmts
-    return $ CompE tstmts
-tExp (InfixE me1 e me2) = do
-    tme1 <- tMExp me1
-    te <- tExp e
-    tme2 <- tMExp me2
-    return $ InfixE tme1 te tme2
-tExp (LitE lit) = return $ LitE lit
-tExp (ConE nm) = return $ ConE nm
-tExp (RecConE nm fexps) = do
-    tfexps <- mapM tFExp fexps
-    return $ RecConE nm tfexps
-tExp _ = undefined
-
-tFExp :: FieldExp -> Q FieldExp
-tFExp (nm, exp) = do
-    te <- tExp exp
-    return (nm, te)
 
 tBody :: Body -> Q Body
 tBody (NormalB exp) = do
@@ -198,41 +103,37 @@ tDec (ValD p bd xs) = do
   return (ValD p tbd xs)
 tDec _ = error "expected ValD constr"
 
-tuplify :: Name -> Exp -> Exp -> Exp
-tuplify s lhs r = TupE [lhs, VarE s, r]
-
-tuplify2 :: Exp -> Exp -> Exp
-tuplify2 m ar = TupE [m, ar]
-
 mkActExp :: Name -> Exp -> Exp -> Exp
-mkActExp s lhs r = AppE (VarE $ mkName "fullRate") args
-  where
-    args = tuplify s lhs r
+mkActExp s lhs r =
+    AppE (VarE $ mkName "fullRate") args
+    where
+        args = tuplify s lhs r
 
 mkReturnStmt :: Exp -> Stmt
 mkReturnStmt = NoBindS
 
 mkRxnExp :: Name -> SRule -> Exp
-mkRxnExp s r = RecConE (mkName "Rxn") fields
-  where
-    lhsSym = mkName "lhs"
-    rhsSym = mkName "rhs"
-    rateSym = mkName "rate"
-    actSym = mkName "act"
-    mrexps =
-        AppE
-            (VarE $ mkName "nrepl")
-            (tuplify2 (ListE $ mults r) (ListE $ rexps r))
-    lexps' = AppE (VarE $ mkName "ms") (ListE $ lexps r)
-    rexps' = AppE (VarE $ mkName "ms") (ParensE mrexps)
-    rateExp = srate r
-    actExp = mkActExp s lexps' (srate r)
-    fields =
-        [ (lhsSym, lexps')
-        , (rhsSym, rexps')
-        , (rateSym, rateExp)
-        , (actSym, actExp)
-        ]
+mkRxnExp s r =
+    RecConE (mkName "Rxn") fields
+    where
+        lhsSym = mkName "lhs"
+        rhsSym = mkName "rhs"
+        rateSym = mkName "rate"
+        actSym = mkName "act"
+        mrexps =
+            AppE
+                (VarE $ mkName "nrepl")
+                (tuplify2 (ListE $ mults r) (ListE $ rexps r))
+        lexps' = AppE (VarE $ mkName "ms") (ListE $ lexps r)
+        rexps' = AppE (VarE $ mkName "ms") (ParensE mrexps)
+        rateExp = srate r
+        actExp = mkActExp s lexps' (srate r)
+        fields =
+            [ (lhsSym, lexps')
+            , (rhsSym, rexps')
+            , (rateSym, rateExp)
+            , (actSym, actExp)
+            ]
 
 mkCompStmts :: Name -> SRule -> Q [Stmt]
 mkCompStmts s r = do
@@ -251,25 +152,28 @@ ruleQuoter' r = do
     return $ LamE [VarP state, VarP time] (CompE stmts)
 
 fluentTransform :: SRule -> Q SRule
-fluentTransform SRule {lexps = les
-                      ,rexps = res
-                      ,mults = m         
-                      ,srate = r
-                      ,cond = c
-                      ,decs = ds} = do
+fluentTransform
+    SRule
+        { lexps = les
+        , rexps = res
+        , mults = m
+        , srate = r
+        , cond = c
+        , decs = ds
+        } = do
     re <- tExp r
     ce <- tExp c
     tres <- mapM tExp res
     tds <- mapM tDec ds
     return
         SRule
-        { lexps = les
-        , rexps = tres
-        , mults = m          
-        , srate = re
-        , cond = ce
-        , decs = tds         
-        }
+            { lexps = les
+            , rexps = tres
+            , mults = m
+            , srate = re
+            , cond = ce
+            , decs = tds
+            }
 
 ruleQuoter :: String -> Q Exp
 ruleQuoter s =

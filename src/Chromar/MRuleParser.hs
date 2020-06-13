@@ -1,12 +1,13 @@
 module Chromar.MRuleParser where
 
+import Prelude hiding (exp)
 import Text.Parsec
-import Data.List
+import Data.List (intercalate)
+import Data.Functor.Identity
 import Language.Haskell.Meta.Parse
 import Language.Haskell.TH.Syntax
 import Text.Parsec.String (Parser)
 import Text.Parsec.Language (emptyDef)
-import Text.Parsec.Token (makeTokenParser)
 
 import qualified Text.Parsec.Token as Tok
 
@@ -16,28 +17,41 @@ data SRule = SRule
     , mults :: [Exp]
     , srate :: Exp
     , cond :: Exp
-    , decs :: [Dec]  
+    , decs :: [Dec]
     } deriving (Show)
 
+langDef :: Tok.GenLanguageDef String u Identity
 langDef =
     emptyDef
-    { Tok.reservedOpNames = ["-->", "@", "=", "where"]
-    , Tok.reservedNames = []
-    }
+        { Tok.reservedOpNames = ["-->", "@", "=", "where"]
+        , Tok.reservedNames = []
+        }
 
 lexer :: Tok.TokenParser ()
 lexer = Tok.makeTokenParser langDef
 
+op :: String -> ParsecT String () Identity ()
 op = Tok.reservedOp lexer
 
+name :: ParsecT String () Identity String
 name = Tok.identifier lexer
 
+commaSep
+    :: ParsecT String () Identity a
+    -> ParsecT String () Identity [a]
 commaSep = Tok.commaSep lexer
 
+braces
+    :: ParsecT String () Identity a
+    -> ParsecT String () Identity a
 braces = Tok.braces lexer
 
+squares
+    :: ParsecT String () Identity a
+    -> ParsecT String () Identity a
 squares = Tok.squares lexer
 
+whiteSpace :: ParsecT String () Identity ()
 whiteSpace = Tok.whiteSpace lexer
 
 attr :: Parser String
@@ -77,21 +91,22 @@ dec = do
   return (vName, expr)
 
 valDec :: (String, String) -> Dec
-valDec (nm, sexpr) = ValD (VarP $ mkName nm) (NormalB expr) []
-  where
-    expr = createExp sexpr
-    
+valDec (nm, sexpr) =
+    ValD (VarP $ mkName nm) (NormalB expr) []
+    where
+        expr = createExp sexpr
+
 whereParser :: Parser [Dec]
 whereParser = do
   op "where"
-  decs <- commaSep dec
-  return (map valDec decs)
+  decs' <- commaSep dec
+  return (map valDec decs')
 
 createExp :: String -> Exp
 createExp exp =
     case parseExp exp of
         Left s -> error s
-        Right exp -> exp
+        Right exp' -> exp'
 
 createExps :: [String] -> [Exp]
 createExps exps =
@@ -110,19 +125,21 @@ parseRule = do
     rexpr <- many1 (noneOf ['['])
     cexpr <- option "True" (squares (many1 (noneOf [']'])))
     wdecs <- option [] whereParser
-    return 
+    return
         SRule
         { lexps = createExps lhs
         , rexps = createExps ragentExps
         , mults = createExps multExps
         , srate = createExp rexpr
         , cond = createExp cexpr
-        , decs = wdecs         
+        , decs = wdecs
         }
 
 --- for testing
+contents :: String
 contents = "A{x=x', y=ygh}, A{x=a, y=m1} --> {2} A{x=f x} @1.0 [x + 1 + 5] where a=1, b=2"
 
+go :: SRule
 go = case parse parseRule "rule" contents of
   (Left err) -> error (show err)
   (Right val) -> val

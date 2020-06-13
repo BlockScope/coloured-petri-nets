@@ -1,11 +1,11 @@
 module Chromar.RuleParser where
 
-import Text.ParserCombinators.Parsec.Combinator
+import Prelude hiding (exp)
+import Text.ParserCombinators.Parsec.Combinator (option, many1, sepBy)
 import Text.ParserCombinators.Parsec
-import Text.Parsec.Token
-import Language.Haskell.TH
-import Language.Haskell.Meta.Parse
-import Control.Monad
+    (Parser, parse, spaces, skipMany, newline, char, string, noneOf)
+import Language.Haskell.TH (Exp, Pat)
+import Language.Haskell.Meta.Parse (parseExp, parsePat)
 
 data SRule = SRule
     { lexps :: [Exp]
@@ -19,7 +19,7 @@ parseAgent = do
     spaces
     skipMany newline
     s <- many1 (noneOf ['}'])
-    char '}'
+    _ <- char '}'
     spaces
     skipMany newline
     return (s ++ "}")
@@ -34,12 +34,12 @@ parseRuleSide = do
 arrowSpaces :: Parser ()
 arrowSpaces = do
     spaces
-    string "-->"
+    _ <- string "-->"
     spaces
 
 parseRate :: Parser String
 parseRate = do
-    char '@'
+    _ <- char '@'
     spaces
     skipMany newline
     spaces
@@ -47,10 +47,10 @@ parseRate = do
 
 parseCond :: Parser String
 parseCond = do
-    char '['
+    _ <- char '['
     spaces
     p <- many1 (noneOf "]")
-    char ']'
+    _ <- char ']'
     return p
 
 createExps :: [String] -> [Exp]
@@ -69,7 +69,7 @@ createExp :: String -> Exp
 createExp exp =
     case parseExp exp of
         Left s -> error s
-        Right exp -> exp
+        Right exp' -> exp'
 
 parseRule :: Parser SRule
 parseRule = do

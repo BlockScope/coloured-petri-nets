@@ -1,16 +1,16 @@
 module Chromar.MAttrs where
 
 import Language.Haskell.TH
-import qualified Data.Set as S
-import qualified Data.Map as M
-import Chromar.MRuleParser
+    ( Q, Info(..), Exp(..), FieldExp, Con(..), Dec(..)
+    , newName, mkName, nameBase, reify
+    )
+import qualified Data.Set as S (Set, fromList, toList, difference)
+import qualified Data.Map as M (fromList, toList, difference, union)
+import Chromar.MRuleParser (SRule(..))
 
 type Nm = String
 
-data AgentType =
-    AgentT Nm
-           (S.Set Nm)
-    deriving (Show)
+data AgentType = AgentT Nm (S.Set Nm) deriving (Show)
 
 getN :: AgentType -> Nm
 getN (AgentT nm _) = nm
@@ -26,13 +26,14 @@ fst3 :: (a, b, c) -> a
 fst3 (x, _, _) = x
 
 getType :: Con -> AgentType
-getType (RecC nm ifce) = AgentT (nameBase nm) (S.fromList fNames)
-  where
-    fNames = map (nameBase . fst3) ifce
+getType (RecC nm ifce) =
+    AgentT (nameBase nm) (S.fromList fNames)
+    where
+        fNames = map (nameBase . fst3) ifce
 getType _ = error "Expected records"
 
 extractIntf :: Info -> [AgentType]
-extractIntf (TyConI (DataD _ _ _ cons _)) = map getType cons
+extractIntf (TyConI (DataD _ _ _ _ cons _)) = map getType cons
 extractIntf _ = error "Expected type constructor"
 
 createMFExp :: Nm -> Q FieldExp
@@ -53,49 +54,55 @@ lookupType :: [AgentType] -> Nm -> AgentType
 lookupType ats nm = head $ filter (\at -> getN at == nm) ats
 
 fPat :: [AgentType] -> Exp -> Q Exp
-fPat ats e@(RecConE nm _) = fillPat at e
-  where
-    at = lookupType ats (nameBase nm)
+fPat ats e@(RecConE nm _) =
+    fillPat at e
+    where
+        at = lookupType ats (nameBase nm)
 fPat _ _ = error "Expected record patterns"
 
 fRExp :: Exp -> Exp -> Exp
-fRExp lexp (RecConE nm rIntf) = RecConE nm (M.toList pIntf')
-  where
-    fIntf = M.fromList (intf lexp)
-    pIntf = M.fromList rIntf
-    pIntf' = M.union pIntf (M.difference fIntf pIntf)
+fRExp lexp (RecConE nm rIntf) =
+    RecConE nm (M.toList pIntf')
+    where
+        fIntf = M.fromList (intf lexp)
+        pIntf = M.fromList rIntf
+        pIntf' = M.union pIntf (M.difference fIntf pIntf)
 fRExp _ _ = error "Expected records"
 
 sameType :: Exp -> Exp -> Bool
 sameType (RecConE nm _) (RecConE nm' _) = nm == nm'
 sameType _ _ = error "Expected records"
 
+tRExp :: Exp -> Exp -> Exp
 tRExp l r
     | sameType l r = fRExp l r
     | otherwise = r
 
 lZipWith :: (a -> b -> b) -> [a] -> [b] -> [b]
-lZipWith _ ls [] = []
+lZipWith _ _ls [] = []
 lZipWith _ [] rs = rs
 lZipWith f (l:ls) (r:rs) = f l r : lZipWith f ls rs
 
 fillAttrs :: SRule -> Q SRule
-fillAttrs SRule {lexps = les
-                ,rexps = res
-                ,mults = m         
-                ,srate = r
-                ,cond = c
-                ,decs = ds} = do
+fillAttrs
+    SRule
+        { lexps = les
+        , rexps = res
+        , mults = m
+        , srate = r
+        , cond = c
+        , decs = ds
+        } = do
     info <- reify (mkName "Agent")
     let aTyps = extractIntf info
     les' <- mapM (fPat aTyps) les
     let res' = lZipWith tRExp les' res
     return
         SRule
-        { lexps = les'
-        , rexps = res'
-        , mults = m          
-        , srate = r
-        , cond = c
-        , decs = ds         
-        }
+            { lexps = les'
+            , rexps = res'
+            , mults = m
+            , srate = r
+            , cond = c
+            , decs = ds
+            }

@@ -1,10 +1,8 @@
-module Main where
+module SeedsModel.Utils where
 
-import Control.Monad
-import qualified System.Random as R
-import Data.Random.Normal
-import Chromar.Fluent
-import Env
+import Prelude hiding (pi)
+import Chromar
+import SeedsModel.Env
 
 data Attrs = Attrs
   { ind :: Int
@@ -13,36 +11,32 @@ data Attrs = Attrs
 
 
 data Agent
-  = Seed { attr :: Attrs
-        ,  dg :: Double
-        ,  art :: Double}
-  | Plant { attr :: Attrs
-         ,  dg :: Double
-         ,  wct :: Double}
-  | FPlant { attr :: Attrs
-          ,  dg :: Double}
+  = Seed {attr :: Attrs, dg :: Double, art :: Double}
+  | Plant {attr :: Attrs, dg :: Double, wct :: Double}
+  | FPlant {attr :: Attrs, dg :: Double}
   deriving (Eq, Show)
 
-
 showPsi :: Agent -> IO ()
-showPsi (Seed { attr=a, dg=_, art=_ }) = print (psi a)
+showPsi Seed{attr=a} = print (psi a)
+showPsi Plant{} = return ()
+showPsi FPlant{} = return ()
 
-
-data DState = DState { dtime :: Double,
-                       mixt :: [Agent] } deriving (Show)
+data DState = DState{dtime :: Double, mixt :: [Agent]} deriving (Show)
 
 data Summ = Summary Int Int Int
 
+showSumm :: Show a => (a, Summ) -> String
 showSumm (t, (Summary nseeds nplants nfplants)) =
   show t ++ " "  ++ show nseeds ++ " " ++ show nplants ++ " " ++ show nfplants
 
-isSeed (Seed{ attr=at, dg=d, art=a }) = True
+isSeed, isPlant, isFPlant :: Agent -> Bool
+isSeed Seed{} = True
 isSeed _ = False
 
-isPlant (Plant { attr=at, dg=d, wct=w}) = True
+isPlant Plant{} = True
 isPlant _ = False
 
-isFPlant (FPlant { attr=at, dg=d } ) = True
+isFPlant FPlant{} = True
 isFPlant _ = False
 
 log' :: Double -> Double
@@ -72,7 +66,7 @@ mkSt psis =
   where
     n = 1000
     pss = take n psis
-     
+
 mkSt' :: [Agent]
 mkSt' = ( replicate 3 (Seed{attr = Attrs {ind=0, psi=(-0.5)}, dg=0.0, art=0.0}) ++
           replicate 18 (Seed{attr = Attrs {ind=0, psi=(-0.388)}, dg=0.0, art=0.0}) ++
@@ -114,7 +108,7 @@ transAgent Plant{attr=a, dg=d, wct=w}
   | otherwise = Plant{attr=a, dg=d, wct=w}
 transAgent FPlant{attr=a,dg=d}
   | d > 8448.0 = Seed{attr=a, dg=0.0, art=0.0}
-  | otherwise = FPlant{attr=a,dg=d}                   
+  | otherwise = FPlant{attr=a,dg=d}
 
 out :: [DState] -> IO ()
 out dss = mapM_ print summs
@@ -122,7 +116,7 @@ out dss = mapM_ print summs
     summs = map (showSumm . summary) dss
 
 outF :: FilePath -> [DState] -> IO ()
-outF fp dss = writeFile fp (unlines liness)
+outF fp' dss = writeFile fp' (unlines liness)
   where
     header = "time nseeds nplants nfplants"
     summs = map (showSumm . summary) dss
@@ -139,6 +133,7 @@ outD dss = mapM_ print summs
   where
     summs = map summD dss
 
+fname :: Show a => a -> String
 fname i = "out/outDW/outD" ++ (show i) ++ ".txt"
 
 doSimulation :: [Double] -> Int -> IO ([Double])
@@ -157,13 +152,7 @@ doSimulation psis i = do
 
 
 go :: [Double] -> Int -> IO ()
-go psis 0 = return ()
+go _ 0 = return ()
 go psis n = do
   psis' <- doSimulation psis n
   go psis' (n-1)
-
-main :: IO ()
-main = do
-  gen <- R.getStdGen
-  let psis = normals' (0.0, 6.0) gen
-  go psis 1
